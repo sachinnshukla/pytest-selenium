@@ -70,9 +70,9 @@ jobs:
       run: |
         allure generate allure-results -o allure-report --clean
     
-    # Step 8: Save the reports so you can download them
+    # Step 8: Save the reports so you can download them (only on non-main branches)
     - name: 💾 Upload Test Results
-      if: always()  # Do this even if tests failed
+      if: always() && github.ref != 'refs/heads/main'  # Skip on main branch (use Pages instead)
       uses: actions/upload-artifact@v4
       with:
         name: allure-report-${{ github.run_number }}
