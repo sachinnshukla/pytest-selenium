@@ -1,0 +1,80 @@
+# 🎯 BEGINNER-FRIENDLY CI/CD FILE
+# This file tells GitHub to automatically run your tests
+# Every time you push code to GitHub, this will run
+
+name: 🧪 Automated Selenium Tests
+
+# When should this run? 
+# Answer: When you push code to main branch (that's it!)
+on:
+  push:
+    branches: [ main, master ]  # Run when you push to main/master
+  pull_request:
+    branches: [ main, master ]  # Run when someone creates a pull request
+
+# What should happen when this runs?
+jobs:
+  test:
+    # What computer should run this? Ubuntu (Linux)
+    runs-on: ubuntu-latest
+    
+    # What steps should it do?
+    steps:
+    
+    # Step 1: Get your code from GitHub
+    - name: 📥 Get Code from GitHub
+      uses: actions/checkout@v4
+    
+    # Step 2: Install Python (like installing Python on a new computer)
+    - name: 🐍 Setup Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    # Step 3: Install Chrome browser (for Selenium)
+    - name: 🌐 Install Chrome Browser
+      uses: browser-actions/setup-chrome@latest
+      with:
+        chrome-version: stable
+    
+    # Step 4: Install your Python packages (like pip install)
+    - name: 📦 Install Python Packages
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    # Step 5: Run your actual tests!
+    - name: 🧪 Run Selenium Tests
+      run: |
+        pytest tests/ --env=prod --headless --alluredir=allure-results -v
+    
+    # Step 6: Install Allure (for pretty reports)
+    - name: 📊 Install Allure
+      run: |
+        wget https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
+        tar -zxf allure-2.24.1.tgz
+        sudo mv allure-2.24.1 /opt/allure
+        echo "/opt/allure/bin" >> $GITHUB_PATH
+    
+    # Step 7: Generate pretty HTML reports
+    - name: 📈 Generate Allure Report
+      if: always()  # Do this even if tests failed
+      run: |
+        allure generate allure-results -o allure-report --clean
+    
+    # Step 8: Save the reports so you can download them
+    - name: 💾 Upload Test Results
+      if: always()  # Do this even if tests failed
+      uses: actions/upload-artifact@v3
+      with:
+        name: allure-report-${{ github.run_number }}
+        path: allure-report/
+    
+    # Step 9: Save screenshots if any were taken
+    - name: 📸 Upload Screenshots
+      if: always()  # Do this even if tests failed
+      uses: actions/upload-artifact@v3
+      with:
+        name: screenshots-${{ github.run_number }}
+        path: results/screenshots/
+      continue-on-error: true  # Don't fail if no screenshots exist

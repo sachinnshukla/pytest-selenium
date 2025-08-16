@@ -1,0 +1,18 @@
+# Core testing framework
+pytest>=7.4.0
+
+# Selenium for web automation
+selenium>=4.15.0
+
+# Allure reporting
+allure-pytest>=2.13.2
+
+# Optional: WebDriver management (auto-downloads drivers)
+webdriver-manager>=4.0.0
+
+# Optional: Additional pytest plugins for better reporting
+pytest-html>=4.1.1
+pytest-xdist>=3.3.1
+
+# Optional: For better test organization
+pytest-metadata>=3.1.1

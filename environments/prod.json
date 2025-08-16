@@ -1,0 +1,15 @@
+{
+  "environment": "prod",
+  "base_url": "https://www.saucedemo.com/",
+  "username": "standard_user",
+  "password": "secret_sauce",
+  "timeout": 10,
+  "browser": "chrome",
+  "headless": false,
+  "window_size": {
+    "width": 1920,
+    "height": 1080
+  },
+  "implicit_wait": 3,
+  "page_load_timeout": 20
+}
