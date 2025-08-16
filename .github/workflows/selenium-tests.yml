@@ -67,7 +67,7 @@ jobs:
     # Step 8: Save the reports so you can download them
     - name: 💾 Upload Test Results
       if: always()  # Do this even if tests failed
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: allure-report-${{ github.run_number }}
         path: allure-report/
@@ -75,7 +75,7 @@ jobs:
     # Step 9: Save screenshots if any were taken
     - name: 📸 Upload Screenshots
       if: always()  # Do this even if tests failed
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: screenshots-${{ github.run_number }}
         path: results/screenshots/
