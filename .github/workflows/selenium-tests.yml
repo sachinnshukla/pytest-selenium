@@ -33,9 +33,9 @@ jobs:
     
     # Step 3: Install Chrome browser (for Selenium)
     - name: 🌐 Install Chrome Browser
-      uses: browser-actions/setup-chrome@latest
-      with:
-        chrome-version: stable
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
     
     # Step 4: Install your Python packages (like pip install)
     - name: 📦 Install Python Packages
@@ -46,11 +46,13 @@ jobs:
     # Step 5: Run your actual tests!
     - name: 🧪 Run Selenium Tests
       run: |
-        pytest tests/ --env=prod --headless --alluredir=allure-results -v
+        pytest tests/ --env=prod --alluredir=allure-results -v
     
     # Step 6: Install Allure (for pretty reports)
     - name: 📊 Install Allure
       run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jre
         wget https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
         tar -zxf allure-2.24.1.tgz
         sudo mv allure-2.24.1 /opt/allure

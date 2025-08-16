@@ -62,7 +62,8 @@ def test_environment(request):
 def driver(test_environment):
     """Create WebDriver instance based on environment configuration"""
     browser_name = test_environment.browser.lower()
-    headless = test_environment.headless
+    # Force headless mode in CI environments
+    headless = test_environment.headless or os.getenv('CI', 'false').lower() == 'true'
     
     # Create browser-specific options
     if browser_name == "chrome":
