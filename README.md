@@ -89,3 +89,4 @@ When running with Allure enabled, you'll see:
 - Detailed test steps in the console
 - Screenshots automatically attached to failed tests
 - Rich HTML reports with timeline, graphs, and detailed test information
+# Small change to trigger CI/CD
