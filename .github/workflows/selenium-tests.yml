@@ -18,6 +18,12 @@ jobs:
     # What computer should run this? Ubuntu (Linux)
     runs-on: ubuntu-latest
     
+    # Permissions needed for GitHub Pages deployment
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
     # What steps should it do?
     steps:
     
@@ -80,3 +86,20 @@ jobs:
         name: screenshots-${{ github.run_number }}
         path: results/screenshots/
       continue-on-error: true  # Don't fail if no screenshots exist
+    
+    # Step 10: Setup GitHub Pages (for live dashboard)
+    - name: 🌐 Setup GitHub Pages
+      if: always() && github.ref == 'refs/heads/main'  # Only on main branch
+      uses: actions/configure-pages@v4
+    
+    # Step 11: Upload Allure report to GitHub Pages
+    - name: 📤 Upload to GitHub Pages
+      if: always() && github.ref == 'refs/heads/main'  # Only on main branch
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: allure-report/
+    
+    # Step 12: Deploy to GitHub Pages (creates live dashboard!)
+    - name: 🚀 Deploy to GitHub Pages
+      if: always() && github.ref == 'refs/heads/main'  # Only on main branch
+      uses: actions/deploy-pages@v4
