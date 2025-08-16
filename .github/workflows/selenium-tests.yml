@@ -52,7 +52,7 @@ jobs:
     # Step 5: Run your actual tests!
     - name: 🧪 Run Selenium Tests
       run: |
-        pytest tests/ --env=prod --alluredir=allure-results -v
+        pytest tests/ --alluredir=allure-results -v
     
     # Step 6: Install Allure (for pretty reports)
     - name: 📊 Install Allure

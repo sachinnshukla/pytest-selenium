@@ -10,8 +10,7 @@ from datetime import datetime
 from twilio.rest import Client
 
 # Import our custom config
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.whatsapp_config import whatsapp_config
+from utils.whatsapp_config import whatsapp_config
 
 
 def send_whatsapp_notification(dashboard_url, status="success", additional_info=None):

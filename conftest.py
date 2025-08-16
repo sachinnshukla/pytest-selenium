@@ -1,135 +1,120 @@
+#!/usr/bin/env python3
+"""
+Simple conftest.py for Selenium Testing Framework
+Just the essentials - driver, screenshots, allure helpers, and base URL
+"""
+
 import pytest
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.edge.options import Options as EdgeOptions
-import config
-from config.environment_manager import environment_manager
-import os
-from datetime import datetime
-from pathlib import Path
+# Simplified - no WebDriver Manager for now
 import allure
 from allure_commons.types import AttachmentType
+from datetime import datetime
+from pathlib import Path
+from config import config, get_base_url
+
 
 def pytest_addoption(parser):
-    """Add command line options for environment and browser selection"""
-    parser.addoption(
-        "--env", action="store", default="prod",
-        help="Environment to run tests against (dev/staging/prod). Default: prod"
-    )
+    """Add command line options"""
     parser.addoption(
         "--browser", action="store", default=None,
-        help="Browser to use (chrome/firefox/edge). Overrides environment config"
+        help="Browser to use (chrome/firefox/edge). Overrides config file"
     )
     parser.addoption(
         "--headless", action="store_true", default=None,
-        help="Run tests in headless mode. Overrides environment config"
-    )
-    parser.addoption(
-        "--screenshot-on-failure", action="store_true", default=True,
-        help="Capture screenshot on test failure (default: True)"
-    )
-    parser.addoption(
-        "--allure-attach-screenshot", action="store_true", default=True,
-        help="Attach screenshots to Allure reports on failure (default: True)"
+        help="Run tests in headless mode"
     )
 
 
 @pytest.fixture(scope="session")
-def test_environment(request):
-    """Load and configure the test environment"""
-    env_name = request.config.getoption("--env")
+def driver(request):
+    """Create WebDriver instance"""
     
-    # Load environment configuration
-    env_config = environment_manager.load_environment(env_name)
+    # Get browser from command line or config
+    browser_name = request.config.getoption("--browser") or config.BROWSER
+    headless = request.config.getoption("--headless") or config.HEADLESS
     
-    # Override with command line options if provided
-    browser_override = request.config.getoption("--browser")
-    headless_override = request.config.getoption("--headless")
-    
-    if browser_override:
-        env_config.browser = browser_override
-    if headless_override is not None:
-        env_config.headless = headless_override
-    
-    # Print configuration for debugging
-    environment_manager.print_config()
-    
-    return env_config
-
-
-@pytest.fixture(scope="session")
-def driver(test_environment):
-    """Create WebDriver instance based on environment configuration"""
-    browser_name = test_environment.browser.lower()
     # Force headless mode in CI environments
-    headless = test_environment.headless or os.getenv('CI', 'false').lower() == 'true'
+    if os.getenv('CI', 'false').lower() == 'true':
+        headless = True
     
-    # Create browser-specific options
-    if browser_name == "chrome":
+    print(f"\n🚀 Starting {browser_name} browser (headless: {headless})")
+    
+    # Create WebDriver (simplified - Chrome only for now)
+    if browser_name.lower() == "chrome":
         options = ChromeOptions()
         if headless:
             options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        driver = webdriver.Chrome(options=options)
-    elif browser_name == "firefox":
-        options = FirefoxOptions()
-        if headless:
-            options.add_argument("--headless")
-        driver = webdriver.Firefox(options=options)
-    elif browser_name == "edge":
-        options = EdgeOptions()
-        if headless:
-            options.add_argument("--headless")
-        driver = webdriver.Edge(options=options)
+        options.add_argument("--disable-gpu")
+        options.add_argument(f"--window-size={config.WINDOW_WIDTH},{config.WINDOW_HEIGHT}")
+        
+        try:
+            # Try to use Chrome without WebDriver Manager first
+            driver_instance = webdriver.Chrome(options=options)
+        except Exception as e:
+            print(f"❌ Failed to start Chrome: {e}")
+            print("💡 Please install ChromeDriver manually or use a different browser")
+            raise
+        
     else:
-        raise ValueError(f"Unsupported browser: {browser_name}")
+        # For demo purposes, let's create a simple mock or skip
+        print(f"⚠️  Browser '{browser_name}' not yet configured in simplified mode")
+        print("💡 Using Chrome as fallback...")
+        options = ChromeOptions()
+        if headless:
+            options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        
+        try:
+            driver_instance = webdriver.Chrome(options=options)
+        except Exception as e:
+            print(f"❌ Failed to start Chrome: {e}")
+            print("💡 Please install ChromeDriver or configure WebDriver Manager")
+            raise
     
-    # Configure driver timeouts
-    driver.implicitly_wait(test_environment.implicit_wait)
-    driver.set_page_load_timeout(test_environment.page_load_timeout)
+    # Configure timeouts
+    driver_instance.implicitly_wait(config.IMPLICIT_WAIT)
+    driver_instance.set_page_load_timeout(config.PAGE_LOAD_TIMEOUT)
     
-    # Set window size
+    # Set window size (if not headless)
     if not headless:
-        driver.set_window_size(
-            test_environment.window_size.width,
-            test_environment.window_size.height
-        )
+        driver_instance.set_window_size(config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
     
-    yield driver
-    driver.quit()
+    yield driver_instance
+    
+    print(f"\n🔚 Closing {browser_name} browser")
+    driver_instance.quit()
 
 
 @pytest.fixture(autouse=True)
-def open_base_url(driver, test_environment):
-    """Navigate to base URL before each test"""
-    driver.get(test_environment.base_url)
+def navigate_to_app(driver):
+    """Navigate to application URL before each test"""
+    base_url = get_base_url()
+    print(f"\n🌐 Navigating to: {base_url}")
+    driver.get(base_url)
 
 
 @pytest.fixture
-def screenshot_helper(request, driver, test_environment):
-    """Screenshot capture helper fixture with Allure integration"""
-    def capture_screenshot(name_suffix="", attach_to_allure=True):
-        """Capture a screenshot with optional name suffix and Allure attachment"""
+def take_screenshot(request, driver):
+    """Screenshot capture helper"""
+    def capture_screenshot(name="screenshot"):
+        """Capture screenshot and attach to Allure report"""
         try:
-            # Create screenshots directory if it doesn't exist
-            screenshots_dir = Path("results/screenshots")
+            # Create screenshots directory
+            screenshots_dir = Path(config.SCREENSHOTS_DIR)
             screenshots_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate filename with timestamp and test info
+            # Generate filename
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             test_name = request.node.name.replace("::", "_").replace(" ", "_")
-            env_name = test_environment.environment
-            browser_name = test_environment.browser
-            
-            if name_suffix:
-                filename = f"{test_name}_{env_name}_{browser_name}_{name_suffix}_{timestamp}.png"
-                allure_name = f"{name_suffix.replace('_', ' ').title()} - {env_name} {browser_name}"
-            else:
-                filename = f"{test_name}_{env_name}_{browser_name}_{timestamp}.png"
-                allure_name = f"Screenshot - {env_name} {browser_name}"
-            
+            filename = f"{test_name}_{name}_{timestamp}.png"
             screenshot_path = screenshots_dir / filename
             
             # Capture screenshot
@@ -139,21 +124,18 @@ def screenshot_helper(request, driver, test_environment):
             with open(screenshot_path, 'wb') as f:
                 f.write(screenshot_bytes)
             
-            # Attach to Allure report if enabled
-            if attach_to_allure and request.config.getoption("--allure-attach-screenshot", default=True):
-                allure.attach(
-                    screenshot_bytes,
-                    name=allure_name,
-                    attachment_type=AttachmentType.PNG
-                )
-                print(f"\n📸 Screenshot saved and attached to Allure: {screenshot_path}")
-            else:
-                print(f"\n📸 Screenshot saved: {screenshot_path}")
+            # Attach to Allure report
+            allure.attach(
+                screenshot_bytes,
+                name=f"Screenshot - {name}",
+                attachment_type=AttachmentType.PNG
+            )
             
+            print(f"📸 Screenshot saved: {screenshot_path}")
             return str(screenshot_path)
             
         except Exception as e:
-            print(f"\n❌ Failed to capture screenshot: {e}")
+            print(f"❌ Failed to capture screenshot: {e}")
             return None
     
     return capture_screenshot
@@ -161,56 +143,58 @@ def screenshot_helper(request, driver, test_environment):
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Capture screenshot on test failure and attach to Allure"""
+    """Capture screenshot on test failure"""
     outcome = yield
-    rep = outcome.get_result()
+    report = outcome.get_result()
     
-    # Only capture screenshot on test failure during the "call" phase
-    if rep.when == "call" and rep.failed:
-        # Check if screenshot capture is enabled
-        screenshot_enabled = item.config.getoption("--screenshot-on-failure", default=True)
-        allure_attach_enabled = item.config.getoption("--allure-attach-screenshot", default=True)
-        
-        if screenshot_enabled and hasattr(item, 'funcargs'):
-            # Get driver from test fixtures
-            driver = item.funcargs.get('driver')
-            test_environment = item.funcargs.get('test_environment')
+    if report.when == "call" and report.failed:
+        # Get the driver from the test's fixtures
+        if hasattr(item, 'funcargs') and 'driver' in item.funcargs:
+            driver = item.funcargs['driver']
             
-            if driver and test_environment:
-                try:
-                    # Create screenshots directory
-                    screenshots_dir = Path("results/screenshots")
-                    screenshots_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    # Generate failure screenshot filename
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    test_name = item.name.replace("::", "_").replace(" ", "_")
-                    env_name = test_environment.environment
-                    browser_name = test_environment.browser
-                    
-                    filename = f"FAILED_{test_name}_{env_name}_{browser_name}_{timestamp}.png"
-                    screenshot_path = screenshots_dir / filename
-                    
-                    # Capture screenshot as bytes for both file and Allure
-                    screenshot_bytes = driver.get_screenshot_as_png()
-                    
-                    # Save screenshot to file
-                    with open(screenshot_path, 'wb') as f:
-                        f.write(screenshot_bytes)
-                    
-                    # Attach to Allure report if enabled
-                    if allure_attach_enabled:
-                        allure.attach(
-                            screenshot_bytes,
-                            name=f"🚨 Failure Screenshot - {env_name.upper()} {browser_name.upper()}",
-                            attachment_type=AttachmentType.PNG
-                        )
-                        print(f"\n📸 Failure screenshot saved and attached to Allure: {screenshot_path}")
-                    else:
-                        print(f"\n📸 Failure screenshot saved: {screenshot_path}")
-                    
-                    # Attach to test report for later use
-                    setattr(rep, 'screenshot_path', str(screenshot_path))
-                    
-                except Exception as e:
-                    print(f"\n❌ Failed to capture failure screenshot: {e}")
+            try:
+                # Create screenshots directory
+                screenshots_dir = Path(config.SCREENSHOTS_DIR)
+                screenshots_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Generate filename for failure screenshot
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                test_name = item.name.replace("::", "_").replace(" ", "_")
+                filename = f"FAILED_{test_name}_{timestamp}.png"
+                screenshot_path = screenshots_dir / filename
+                
+                # Capture and save screenshot
+                screenshot_bytes = driver.get_screenshot_as_png()
+                with open(screenshot_path, 'wb') as f:
+                    f.write(screenshot_bytes)
+                
+                # Attach to Allure report
+                allure.attach(
+                    screenshot_bytes,
+                    name="❌ Test Failure Screenshot",
+                    attachment_type=AttachmentType.PNG
+                )
+                
+                print(f"\n📸 Failure screenshot saved: {screenshot_path}")
+                
+            except Exception as e:
+                print(f"\n❌ Failed to capture failure screenshot: {e}")
+
+
+# Allure reporting helpers
+@allure.step("Opening application")
+def allure_open_app(driver, url):
+    """Allure step for opening application"""
+    driver.get(url)
+
+
+@allure.step("Taking screenshot: {name}")
+def allure_screenshot(driver, name="screenshot"):
+    """Allure step for taking screenshots"""
+    screenshot_bytes = driver.get_screenshot_as_png()
+    allure.attach(
+        screenshot_bytes,
+        name=name,
+        attachment_type=AttachmentType.PNG
+    )
+    return screenshot_bytes

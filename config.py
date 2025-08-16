@@ -1,78 +1,50 @@
-"""
-Configuration module - provides environment-specific settings
-Usage:
-    from config import config
-    
-    # Access configuration values
-    driver.get(config.BASE_URL)
-    login_page.enter_username(config.USERNAME)
-"""
+#!/usr/bin/env python3
+import os
 
-from config.environment_manager import environment_manager
-
-
-class ConfigProxy:
-    """Proxy class to provide lazy loading of configuration"""
+class Config:
+    """Simple test configuration - edit these values for your application"""
     
-    def __init__(self):
-        self._config = None
+    # Application Settings
+    BASE_URL = "https://www.saucedemo.com/"
+    USERNAME = "standard_user"
+    PASSWORD = "secret_sauce"
     
-    def _get_config(self):
-        if self._config is None:
-            self._config = environment_manager.config
-        return self._config
+    # Browser Settings
+    BROWSER = "chrome"          # Options: chrome, firefox, edge
+    HEADLESS = False           # Set to True for headless mode
+    WINDOW_WIDTH = 1920
+    WINDOW_HEIGHT = 1080
     
-    @property
-    def BASE_URL(self):
-        return self._get_config().base_url
+    # Timeout Settings (in seconds)
+    IMPLICIT_WAIT = 10         # How long to wait for elements
+    PAGE_LOAD_TIMEOUT = 30     # How long to wait for pages to load
     
-    @property
-    def USERNAME(self):
-        return self._get_config().username
+    # Test Settings
+    SCREENSHOT_ON_FAILURE = True    # Take screenshot when test fails
     
-    @property
-    def PASSWORD(self):
-        return self._get_config().password
-    
-    @property
-    def TIMEOUT(self):
-        return self._get_config().timeout
-    
-    @property
-    def BROWSER(self):
-        return self._get_config().browser
-    
-    @property
-    def HEADLESS(self):
-        return self._get_config().headless
-    
-    @property
-    def WINDOW_WIDTH(self):
-        return self._get_config().window_size.width
-    
-    @property
-    def WINDOW_HEIGHT(self):
-        return self._get_config().window_size.height
-    
-    @property
-    def IMPLICIT_WAIT(self):
-        return self._get_config().implicit_wait
-    
-    @property
-    def PAGE_LOAD_TIMEOUT(self):
-        return self._get_config().page_load_timeout
-    
-    @property
-    def ENVIRONMENT(self):
-        return self._get_config().environment
+    # Allure Reporting
+    SCREENSHOTS_DIR = "results/screenshots"
 
 
-# Create proxy instance and expose it
-config = ConfigProxy()
+def get_base_url():
+    """Get the base URL for the application"""
+    return os.getenv('TEST_BASE_URL', Config.BASE_URL)
 
-# For backward compatibility, expose common values as module attributes
-def __getattr__(name):
-    """Dynamic attribute access for backward compatibility"""
-    if hasattr(config, name):
-        return getattr(config, name)
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+# Global config instance
+config = Config()
+
+
+if __name__ == "__main__":
+    """Print configuration when run directly"""
+    print("=" * 50)
+    print("🔧 Test Configuration")
+    print("=" * 50)
+    print(f"📱 Base URL: {config.BASE_URL}")
+    print(f"👤 Username: {config.USERNAME}")
+    print(f"🔐 Password: {'*' * len(config.PASSWORD)}")
+    print(f"🌐 Browser: {config.BROWSER}")
+    print(f"👁️  Headless: {config.HEADLESS}")
+    print(f"📐 Window: {config.WINDOW_WIDTH}x{config.WINDOW_HEIGHT}")
+    print(f"⏱️  Timeouts: {config.IMPLICIT_WAIT}s / {config.PAGE_LOAD_TIMEOUT}s")
+    print("=" * 50)
