@@ -103,3 +103,27 @@ jobs:
     - name: 🚀 Deploy to GitHub Pages
       if: always() && github.ref == 'refs/heads/main'  # Only on main branch
       uses: actions/deploy-pages@v4
+    
+    # Step 13: Send WhatsApp Success Notification
+    - name: 📱 Send WhatsApp Success Notification
+      if: success() && github.ref == 'refs/heads/main'
+      env:
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+        TWILIO_WHATSAPP_TO: ${{ secrets.TWILIO_WHATSAPP_TO }}
+      run: |
+        python utils/whatsapp_notifier.py success https://sachinnshukla.github.io/pytest-selenium/
+      continue-on-error: true
+    
+    # Step 14: Send WhatsApp Failure Notification  
+    - name: 📱 Send WhatsApp Failure Notification
+      if: failure()
+      env:
+        TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+        TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+        TWILIO_WHATSAPP_FROM: whatsapp:+14155238886
+        TWILIO_WHATSAPP_TO: ${{ secrets.TWILIO_WHATSAPP_TO }}
+      run: |
+        python utils/whatsapp_notifier.py failure
+      continue-on-error: true

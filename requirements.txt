@@ -16,3 +16,6 @@ pytest-xdist>=3.3.1
 
 # Optional: For better test organization
 pytest-metadata>=3.1.1
+
+# WhatsApp notifications via Twilio
+twilio>=8.10.0
