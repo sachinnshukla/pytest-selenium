@@ -13,10 +13,6 @@ class TestLogin:
         assert home_page.is_home_page_displayed(), "User should be logged in successfully"
     
     def test_pipeline_robustness_demo(self, driver, take_screenshot):
-        """
-        🚨 DEMO: This test intentionally fails to show pipeline robustness
-        Pipeline should continue and deploy dashboard even with failing tests
-        """
         login_page = SauceLabLoginPage(driver)
         
         # Use invalid credentials that will fail
