@@ -188,7 +188,7 @@ def allure_open_app(driver, url):
     driver.get(url)
 
 
-@allure.step("Taking screenshot: {name}")
+@allure.step("Taking screenshots: {name}")
 def allure_screenshot(driver, name="screenshot"):
     """Allure step for taking screenshots"""
     screenshot_bytes = driver.get_screenshot_as_png()
