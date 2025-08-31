@@ -27,3 +27,5 @@ class TestLogin:
         home_page = SauceLabHomePage(driver)
         assert home_page.is_home_page_displayed(), "❌ DEMO: Pipeline should handle this failure gracefully and still deploy dashboard"
     
+    def test_dummy(self):
+        assert True
